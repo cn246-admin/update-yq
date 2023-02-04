@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Description: Install and verify yq
+# Description: Install and verify yq on Linux or Mac
 # Author: Chuck Nemeth
 # https://github.com/mikefarah/yq
 
