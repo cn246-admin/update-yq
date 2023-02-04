@@ -1,22 +1,40 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
-# Description: Install and verify yq on Linux or Mac
+# Description: Download, verify and install yq on Linux and Mac
 # Author: Chuck Nemeth
 # https://github.com/mikefarah/yq
 
-os="$(uname -s)"
-bindir="$HOME/.local/bin"
-mandir="$HOME/.local/share/man/man1"
-tmpdir="$(mktemp -d /tmp/yq.XXXXXXXX)"
-yq_man="yq.1"
-yq_ver="$(yq --version | cut -d' ' -f 4)"
-yq_url="https://github.com/mikefarah/yq/releases/latest/download/"
+bin_dir="$HOME/.local/bin"
+man_dir="$HOME/.local/share/man/man1"
+tmp_dir="$(mktemp -d /tmp/yq.XXXXXXXX)"
 
+yq_installed_version="$(yq --version | cut -d' ' -f 4)"
+yq_version="$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | \
+              awk -F': ' '/tag_name/ { gsub(/\"|\,/,"",$2); print $2 }')"
+yq_url="https://github.com/mikefarah/yq/releases/download/${yq_version}/"
+yq_man="yq.1"
+
+# Define clean_up function
+clean_up () {
+  printf "Would you like to delete the tmp_dir and the downloaded files? (Yy/Nn) "
+  read -r choice
+  case "${choice}" in
+    [yY]|[yY]es)
+      printf '%s\n\n' "Cleaning up install files"
+      cd && rm -rf "${tmp_dir}"
+      exit "${1}"
+      ;;
+    *)
+      printf '%s\n\n' "Exiting without deleting files from ${tmp_dir}"
+      exit "${1}"
+      ;;
+  esac
+}
 
 #######################
 # OS CHECK
 #######################
-case "${os}" in
+case "$(uname -s)" in
   "Darwin")
       case "$(uname -p)" in
         "arm")
@@ -31,8 +49,10 @@ case "${os}" in
     yq_archive="yq_linux_amd64"
     ;;
   *)
-    printf '%s\n' "Unsupported OS. Exiting"
-    exit 1
+    tput setaf 1
+    printf '%s\n' "[ERROR] Unsupported OS. Exiting"
+    tpug sgr0
+    clean_up 1
 esac
 
 
@@ -40,11 +60,13 @@ esac
 # PATH CHECK
 #######################
 case :$PATH: in
-  *:"${bindir}":*)  ;;  # do nothing
+  *:"${bin_dir}":*)  ;;  # do nothing
   *)
-    printf '%s\n' "ERROR ${bindir} was not found in \$PATH!"
-    printf '%s\n' "Add ${bindir} to PATH or select another directory to install to"
-    exit 1
+    tput setaf 1
+    printf '%s\n' "[ERROR] ${bin_dir} was not found in \$PATH!"
+    printf '%s\n\n' "[ERROR] Add ${bin_dir} to PATH or select another directory to install to"
+    tput sgr0
+    clean_up 1
     ;;
 esac
 
@@ -52,45 +74,29 @@ esac
 #######################
 # VERSION CHECK
 #######################
-cd "${tmpdir}" || exit
+cd "${tmp_dir}" || exit
 
-printf '%s\n' "Downloading release_notes from yq GitHub"
-curl -s -O https://raw.githubusercontent.com/mikefarah/yq/master/release_notes.txt
-
-case "${os}" in
-  "Darwin")
-    available="$(< release_notes.txt grep '^\d' | head -n1)"
-    ;;
-  "Linux")
-    available="$(< release_notes.txt grep -P '^\d' | head -n1)"
-    ;;
-esac
-
-if [ "${available%%:}" = "${yq_ver##v}" ]; then
-  printf '%s\n' "Already using latest version. Exiting."
-  cd && rm -rf "${tmpdir}"
-  exit
+if [ "${yq_version}" = "${yq_installed_version}" ]; then
+  tput setaf 3
+  printf '%s\n\n' "[WARN] Already using latest version. Exiting."
+  tput sgr0
+  clean_up 0
 else
-  printf '%s\n' "Installed Verision: ${yq_ver}"
-  printf '%s\n' "Latest Version: ${available}"
+  printf '%s\n' "Installed Verision: ${yq_installed_version}"
+  printf '%s\n' "Latest Version: ${yq_version}"
 fi
 
 
 #######################
 # DOWNLOAD
 #######################
-printf '%s\n' "Downloading yq archive"
-curl -sL -o "${tmpdir}/${yq_archive}.tar.gz" "${yq_url}/${yq_archive}.tar.gz"
-curl -sL -o "${tmpdir}/checksums" "${yq_url}/checksums"
-curl -sL -o "${tmpdir}/checksums_hashes_order" "${yq_url}/checksums_hashes_order"
+printf '%s\n' "Downloading yq archive and verification files"
+curl -sL -o "${tmp_dir}/${yq_archive}.tar.gz" "${yq_url}/${yq_archive}.tar.gz"
+curl -sL -o "${tmp_dir}/checksums" "${yq_url}/checksums"
+curl -sL -o "${tmp_dir}/checksums_hashes_order" "${yq_url}/checksums_hashes_order"
 
-if [ -f "${yq_archive}.tar.gz" ]; then
-  printf '%s\n' "Extracting ${yq_archive}.tar.gz"
-  tar -xf "${yq_archive}.tar.gz"
-else
-  printf '%s\n' "Error ${yq_archive}.tar.gz not found! Did the download succeed?"
-  exit 1
-fi
+printf '%s\n\n' "Extracting ${yq_archive}.tar.gz"
+tar -xf "${yq_archive}.tar.gz"
 
 
 #######################
@@ -101,12 +107,13 @@ lineNumber=$(echo "$grepMatch" | cut -d: -f1)
 realLineNumber="$((lineNumber + 1))"
 
 awk -v ref="${yq_archive}.tar.gz" -v lin="$realLineNumber" \
-  'match($1, ref) { print $lin "  " $1}' checksums > "${tmpdir}/SHA512sums"
+  'match($1, ref) { print $lin "  " $1}' checksums > "${tmp_dir}/SHA512sums"
 
-if ! shasum --algorithm=512 --check "${tmpdir}/SHA512sums"; then
-  printf '%s\n' "Failed SHASUM check. Exiting"
-  cd && rm -rf "${tmpdir}"
-  exit 1
+if ! shasum -qc "${tmp_dir}/SHA512sums"; then
+  tput setaf 1
+  printf '\n%s\n\n' "[ERROR] Problem with checksum!"
+  tput sgr0
+  clean_up 1
 fi
 
 
@@ -114,13 +121,13 @@ fi
 # PREPARE
 #######################
 # Bin dir
-if [ ! -d "${bindir}" ]; then
-  mkdir -p "${bindir}"
+if [ ! -d "${bin_dir}" ]; then
+  mkdir -p "${bin_dir}"
 fi
 
 # Man dir
-if [ ! -d "${mandir}" ]; then
-  mkdir -p "${mandir}"
+if [ ! -d "${man_dir}" ]; then
+  mkdir -p "${man_dir}"
 fi
 
 
@@ -128,15 +135,15 @@ fi
 # INSTALL
 #######################
 # Install binary
-if [ -f "${tmpdir}/${yq_archive}" ]; then
-  mv "${tmpdir}/${yq_archive}" "${bindir}/yq"
-  chmod 700 "${bindir}/yq"
+if [ -f "${tmp_dir}/${yq_archive}" ]; then
+  mv "${tmp_dir}/${yq_archive}" "${bin_dir}/yq"
+  chmod 700 "${bin_dir}/yq"
 fi
 
 # Install man page
-if [ -f "${tmpdir}/${yq_man}" ]; then
-  mv "${tmpdir}/${yq_man}" "${mandir}/${yq_man}"
-  chmod 640 "${mandir}/${yq_man}"
+if [ -f "${tmp_dir}/${yq_man}" ]; then
+  mv "${tmp_dir}/${yq_man}" "${man_dir}/${yq_man}"
+  chmod 640 "${man_dir}/${yq_man}"
 fi
 
 
@@ -144,7 +151,7 @@ fi
 # VERSION CHECK
 #######################
 tput setaf 2
-printf '\n%s\n' "Old Version: ${yq_ver}"
+printf '\n%s\n' "Old Version: ${yq_installed_version}"
 printf '%s\n\n' "Installed Version: $(yq --version | cut -d' ' -f 4)"
 tput sgr0
 
@@ -152,17 +159,6 @@ tput sgr0
 #######################
 # CLEAN UP
 #######################
-printf "Would you like to delete the install files? (Yy/Nn) "
-read -r choice
-case "${choice}" in
-  [yY]|[yY]es)
-    printf '%s\n\n' "Cleaning up install files"
-    cd && rm -rf "${tmpdir}"
-    ;;
-  *)
-    printf '%s\n\n' "Exiting without deleting files from ${tmpdir}"
-    exit 0
-    ;;
-esac
+clean_up 0
 
 # vim: ft=sh ts=2 sts=2 sw=2 sr et
