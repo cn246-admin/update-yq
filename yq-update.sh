@@ -8,7 +8,12 @@ bin_dir="$HOME/.local/bin"
 man_dir="$HOME/.local/share/man/man1"
 tmp_dir="$(mktemp -d /tmp/yq.XXXXXXXX)"
 
-yq_installed_version="$(yq --version | cut -d' ' -f 4)"
+if command -v yq >/dev/null; then
+  yq_installed_version="$(yq --version | cut -d' ' -f 4)"
+else
+  yq_installed_version="Not Installed"
+fi
+
 yq_version="$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | \
               awk -F': ' '/tag_name/ { gsub(/\"|\,/,"",$2); print $2 }')"
 yq_url="https://github.com/mikefarah/yq/releases/download/${yq_version}/"
@@ -50,8 +55,8 @@ case "$(uname -s)" in
     ;;
   *)
     tput setaf 1
-    printf '%s\n' "[ERROR] Unsupported OS. Exiting"
-    tpug sgr0
+    printf '%s\n\n' "[ERROR] Unsupported OS. Exiting"
+    tput sgr0
     clean_up 1
 esac
 
@@ -83,7 +88,7 @@ if [ "${yq_version}" = "${yq_installed_version}" ]; then
   clean_up 0
 else
   printf '%s\n' "Installed Verision: ${yq_installed_version}"
-  printf '%s\n' "Latest Version: ${yq_version}"
+  printf '%s\n\n' "Latest Version: ${yq_version}"
 fi
 
 
@@ -95,7 +100,7 @@ curl -sL -o "${tmp_dir}/${yq_archive}.tar.gz" "${yq_url}/${yq_archive}.tar.gz"
 curl -sL -o "${tmp_dir}/checksums" "${yq_url}/checksums"
 curl -sL -o "${tmp_dir}/checksums_hashes_order" "${yq_url}/checksums_hashes_order"
 
-printf '%s\n\n' "Extracting ${yq_archive}.tar.gz"
+printf '%s\n' "Extracting ${yq_archive}.tar.gz"
 tar -xf "${yq_archive}.tar.gz"
 
 
@@ -109,9 +114,10 @@ realLineNumber="$((lineNumber + 1))"
 awk -v ref="${yq_archive}.tar.gz" -v lin="$realLineNumber" \
   'match($1, ref) { print $lin "  " $1}' checksums > "${tmp_dir}/SHA512sums"
 
+printf '%s\n' "Verifying ${yq_archive}.tar.gz"
 if ! shasum -qc "${tmp_dir}/SHA512sums"; then
   tput setaf 1
-  printf '\n%s\n\n' "[ERROR] Problem with checksum!"
+  printf '%s\n\n' "[ERROR] Problem with checksum!"
   tput sgr0
   clean_up 1
 fi
@@ -120,12 +126,12 @@ fi
 #######################
 # PREPARE
 #######################
-# Bin dir
+# Create bin dir if it doesn't exist
 if [ ! -d "${bin_dir}" ]; then
   mkdir -p "${bin_dir}"
 fi
 
-# Man dir
+# Create man dir if it doesn't exist
 if [ ! -d "${man_dir}" ]; then
   mkdir -p "${man_dir}"
 fi
@@ -134,7 +140,7 @@ fi
 #######################
 # INSTALL
 #######################
-# Install binary
+# Install yq binary
 if [ -f "${tmp_dir}/${yq_archive}" ]; then
   mv "${tmp_dir}/${yq_archive}" "${bin_dir}/yq"
   chmod 700 "${bin_dir}/yq"
@@ -151,7 +157,7 @@ fi
 # VERSION CHECK
 #######################
 tput setaf 2
-printf '\n%s\n' "Old Version: ${yq_installed_version}"
+printf '\n%s\n' "Done!"
 printf '%s\n\n' "Installed Version: $(yq --version | cut -d' ' -f 4)"
 tput sgr0
 
