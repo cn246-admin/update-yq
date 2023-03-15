@@ -31,12 +31,12 @@ clean_up () {
   read -r choice
   case "${choice}" in
     [yY]|[yY]es)
-      printf '%s\n\n' "Cleaning up install files"
+      printf '%s\n' "Cleaning up install files"
       cd && rm -rf "${tmpdir}"
       exit "${1}"
       ;;
     *)
-      printf '%s\n\n' "Exiting without deleting files from ${tmpdir}"
+      printf '%s\n' "Exiting without deleting files from ${tmpdir}"
       exit "${1}"
       ;;
   esac
@@ -110,7 +110,7 @@ if [ "${yq_version}" = "${yq_installed_version}" ]; then
   clean_up 0
 else
   printf '%s\n' "Installed Verision: ${yq_installed_version}"
-  printf '%s\n\n' "Latest Version: ${yq_version}"
+  printf '%s\n' "Latest Version: ${yq_version}"
 fi
 
 
