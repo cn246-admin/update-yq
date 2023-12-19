@@ -27,16 +27,14 @@ yq_man="yq.1"
 #######################
 # Define clean_up function
 clean_up () {
-  printf '%s' "Would you like to delete the tmp_dir and the downloaded files? (Yy/Nn) "
-  read -r choice
-  case "${choice}" in
-    [yY]|[yY]es)
-      printf '%s\n' "Cleaning up install files"
-      cd && rm -rf "${tmp_dir}"
+  case "${2}" in
+    [dD]|[dD]ebug)
+      printf '%s\n' "Exiting without deleting files from ${tmp_dir}"
       exit "${1}"
       ;;
     *)
-      printf '%s\n' "Exiting without deleting files from ${tmp_dir}"
+      printf '%s\n' "Cleaning up install files"
+      cd && rm -rf "${tmp_dir}"
       exit "${1}"
       ;;
   esac
@@ -151,11 +149,13 @@ fi
 # Create bin dir if it doesn't exist
 if [ ! -d "${bin_dir}" ]; then
   mkdir -p "${bin_dir}"
+  chmod 700 "${bin_dir}"
 fi
 
 # Create man dir if it doesn't exist
 if [ ! -d "${man_dir}" ]; then
   mkdir -p "${man_dir}"
+  chmod 700 "${man_dir}"
 fi
 
 
@@ -171,7 +171,7 @@ fi
 # Install man page
 if [ -f "${tmp_dir}/${yq_man}" ]; then
   mv "${tmp_dir}/${yq_man}" "${man_dir}/${yq_man}"
-  chmod 640 "${man_dir}/${yq_man}"
+  chmod 600 "${man_dir}/${yq_man}"
 fi
 
 
