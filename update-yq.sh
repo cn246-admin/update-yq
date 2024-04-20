@@ -4,9 +4,7 @@
 # Author: Chuck Nemeth
 # https://github.com/mikefarah/yq
 
-#######################
 # VARIABLES
-#######################
 bin_dir="$HOME/.local/bin"
 man_dir="$HOME/.local/share/man/man1"
 tmp_dir="$(mktemp -d /tmp/yq.XXXXXXXX)"
@@ -22,10 +20,9 @@ yq_version="$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest 
 yq_url="https://github.com/mikefarah/yq/releases/download/${yq_version}/"
 yq_man="yq.1"
 
-#######################
+
 # FUNCTIONS
-#######################
-# Define clean_up function
+# delete temporary install files
 clean_up () {
   case "${2}" in
     [dD]|[dD]ebug)
@@ -40,31 +37,13 @@ clean_up () {
   esac
 }
 
-# green output
-code_grn () {
-  tput setaf 2
-  printf '%s\n' "${1}"
-  tput sgr0
-}
-
-# red output
-code_red () {
-  tput setaf 1
-  printf '%s\n' "${1}"
-  tput sgr0
-}
-
-# yellow output
-code_yel () {
-  tput setaf 3
-  printf '%s\n' "${1}"
-  tput sgr0
-}
+# colored output
+code_grn () { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
+code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
+code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 
 
-#######################
 # OS CHECK
-#######################
 case "$(uname -s)" in
   "Darwin")
       case "$(uname -p)" in
@@ -85,9 +64,7 @@ case "$(uname -s)" in
 esac
 
 
-#######################
 # PATH CHECK
-#######################
 case :$PATH: in
   *:"${bin_dir}":*)  ;;  # do nothing
   *)
@@ -98,9 +75,7 @@ case :$PATH: in
 esac
 
 
-#######################
 # VERSION CHECK
-#######################
 cd "${tmp_dir}" || exit
 
 if [ "${yq_version}" = "${yq_installed_version}" ]; then
@@ -114,9 +89,7 @@ else
 fi
 
 
-#######################
 # DOWNLOAD
-#######################
 printf '%s\n' "Downloading yq archive and verification files"
 curl -sL -o "${tmp_dir}/${yq_archive}.tar.gz" "${yq_url}/${yq_archive}.tar.gz"
 curl -sL -o "${tmp_dir}/checksums" "${yq_url}/checksums"
@@ -126,9 +99,7 @@ printf '%s\n' "Extracting ${yq_archive}.tar.gz"
 tar -xf "${yq_archive}.tar.gz"
 
 
-#######################
 # VERIFY
-#######################
 grepMatch=$(grep -m 1 -n "SHA-512" checksums_hashes_order)
 lineNumber=$(echo "$grepMatch" | cut -d: -f1)
 realLineNumber="$((lineNumber + 1))"
@@ -143,48 +114,33 @@ if ! shasum -qc "${tmp_dir}/SHA512sums"; then
 fi
 
 
-#######################
 # PREPARE
-#######################
-# Create bin dir if it doesn't exist
-if [ ! -d "${bin_dir}" ]; then
-  mkdir -p "${bin_dir}"
-  chmod 700 "${bin_dir}"
-fi
-
-# Create man dir if it doesn't exist
-if [ ! -d "${man_dir}" ]; then
-  mkdir -p "${man_dir}"
-  chmod 700 "${man_dir}"
-fi
+# create directories
+[ ! -d "${bin_dir}" ] && install -m 0700 -d "${bin_dir}"
+[ ! -d "${man_dir}" ] && install -m 0700 -d "${man_dir}"
 
 
-#######################
 # INSTALL
-#######################
-# Install yq binary
+# install yq binary
 if [ -f "${tmp_dir}/${yq_archive}" ]; then
   mv "${tmp_dir}/${yq_archive}" "${bin_dir}/yq"
-  chmod 700 "${bin_dir}/yq"
+  chmod 0700 "${bin_dir}/yq"
 fi
 
-# Install man page
+# install man page
+printf '%s\n' "Installing yq man page"
 if [ -f "${tmp_dir}/${yq_man}" ]; then
   mv "${tmp_dir}/${yq_man}" "${man_dir}/${yq_man}"
-  chmod 600 "${man_dir}/${yq_man}"
+  chmod 0600 "${man_dir}/${yq_man}"
 fi
 
 
-#######################
 # VERSION CHECK
-#######################
 code_grn "Done!"
 code_grn "Installed Version: $(yq --version | cut -d' ' -f 4)"
 
 
-#######################
 # CLEAN UP
-#######################
 clean_up 0
 
 # vim: ft=sh ts=2 sts=2 sw=2 sr et
