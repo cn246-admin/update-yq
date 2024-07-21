@@ -24,15 +24,13 @@ yq_man="yq.1"
 # FUNCTIONS
 # delete temporary install files
 clean_up () {
-  case "${2}" in
+  case "${1}" in
     [dD]|[dD]ebug)
-      printf '%s\n' "Exiting without deleting files from ${tmp_dir}"
-      exit "${1}"
+      printf '%s\n' "[INFO] Exiting without deleting files from ${tmp_dir}"
       ;;
     *)
-      printf '%s\n' "Cleaning up install files"
+      printf '%s\n' "[INFO] Cleaning up install files"
       cd && rm -rf "${tmp_dir}"
-      exit "${1}"
       ;;
   esac
 }
@@ -42,6 +40,8 @@ code_grn () { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
 code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
 code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 
+# Run clean_up function on exit
+trap clean_up EXIT
 
 # OS CHECK
 case "$(uname -s)" in
@@ -60,7 +60,7 @@ case "$(uname -s)" in
     ;;
   *)
     code_red "[ERROR] Unsupported OS. Exiting"
-    clean_up 1
+    exit 1
 esac
 
 
@@ -70,7 +70,7 @@ case :$PATH: in
   *)
     code_red "[ERROR] ${bin_dir} was not found in \$PATH!"
     code_red "Add ${bin_dir} to PATH or select another directory to install to"
-    clean_up 1
+    exit 1
     ;;
 esac
 
@@ -82,7 +82,7 @@ if [ "${yq_version}" = "${yq_installed_version}" ]; then
   printf '%s\n' "Installed Verision: ${yq_installed_version}"
   printf '%s\n' "Latest Version: ${yq_version}"
   code_yel "[INFO] Already using latest version. Exiting."
-  clean_up 0
+  exit
 else
   printf '%s\n' "Installed Verision: ${yq_installed_version}"
   printf '%s\n' "Latest Version: ${yq_version}"
@@ -110,7 +110,7 @@ awk -v ref="${yq_archive}.tar.gz" -v lin="$realLineNumber" \
 printf '%s\n' "Verifying ${yq_archive}.tar.gz"
 if ! shasum -qc "${tmp_dir}/SHA512sums"; then
   code_red "[ERROR] Problem with checksum!"
-  clean_up 1
+  exit 1
 fi
 
 
@@ -138,9 +138,5 @@ fi
 # VERSION CHECK
 code_grn "Done!"
 code_grn "Installed Version: $(yq --version | cut -d' ' -f 4)"
-
-
-# CLEAN UP
-clean_up 0
 
 # vim: ft=sh ts=2 sts=2 sw=2 sr et
