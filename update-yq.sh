@@ -4,16 +4,19 @@
 # Author: Chuck Nemeth
 # https://github.com/mikefarah/yq
 
-# OS CHECK
+# Colored output
+code_grn () { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
+code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
+code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
+
+# OS Check
 case "$(uname -s)" in
   "Darwin")
       case "$(uname -p)" in
         "arm")
-          yq_archive="yq_darwin_arm64"
-          ;;
+          yq_archive="yq_darwin_arm64" ;;
         *)
-          yq_archive="yq_darwin_amd64"
-          ;;
+          yq_archive="yq_darwin_amd64" ;;
       esac
     ;;
   "Linux")
@@ -22,12 +25,12 @@ case "$(uname -s)" in
   *)
     code_red "[ERROR] Unsupported OS. Exiting"
     exit 1
+    ;;
 esac
 
-# VARIABLES
+# Variables
 bin_dir="$HOME/.local/bin"
 man_dir="$HOME/.local/share/man/man1"
-tmp_dir="$(mktemp -d /tmp/yq.XXXXXXXX)"
 
 if command -v yq >/dev/null; then
   yq_installed_version="$(yq --version | cut -d' ' -f 4)"
@@ -53,12 +56,7 @@ clean_up () {
   esac
 }
 
-# Colored output
-code_grn () { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
-code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
-code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
-
-# PATH CHECK
+# PATH Check
 case :$PATH: in
   *:"${bin_dir}":*)  ;;  # do nothing
   *)
@@ -68,12 +66,7 @@ case :$PATH: in
     ;;
 esac
 
-# Run clean_up function on exit
-trap clean_up EXIT
-
 # Version Check
-cd "${tmp_dir}" || exit
-
 if [ "${yq_version}" = "${yq_installed_version}" ]; then
   printf '%s\n' "Installed Verision: ${yq_installed_version}"
   printf '%s\n' "Latest Version: ${yq_version}"
@@ -82,7 +75,12 @@ if [ "${yq_version}" = "${yq_installed_version}" ]; then
 else
   printf '%s\n' "Installed Verision: ${yq_installed_version}"
   printf '%s\n' "Latest Version: ${yq_version}"
+  tmp_dir="$(mktemp -d /tmp/yq.XXXXXXXX)"
+  cd "${tmp_dir}" || exit
 fi
+
+# Run clean_up function on exit
+trap clean_up EXIT
 
 # Download
 printf '%s\n' "[INFO] Downloading yq archive and verification files"
