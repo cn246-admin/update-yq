@@ -47,12 +47,10 @@ yq_man="yq.1"
 clean_up () {
   case "${1}" in
     [dD]|[dD]ebug)
-      printf '%s\n' "[INFO] Exiting without deleting files from ${tmp_dir}"
-      ;;
+      printf '%s\n' "[INFO] Exiting without deleting files from ${tmp_dir}" ;;
     *)
       printf '%s\n' "[INFO] Cleaning up install files"
-      cd && rm -rf "${tmp_dir}"
-      ;;
+      cd && rm -rf "${tmp_dir}" ;;
   esac
 }
 
@@ -62,8 +60,7 @@ case :$PATH: in
   *)
     code_red "[ERROR] ${bin_dir} was not found in \$PATH!"
     code_red "Add ${bin_dir} to PATH or select another directory to install to"
-    exit 1
-    ;;
+    exit 1 ;;
 esac
 
 # Version Check
