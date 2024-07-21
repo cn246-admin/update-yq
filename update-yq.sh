@@ -10,22 +10,18 @@ code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
 code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 
 # OS Check
-case "$(uname -s)" in
-  "Darwin")
-      case "$(uname -p)" in
-        "arm")
-          yq_archive="yq_darwin_arm64" ;;
-        *)
-          yq_archive="yq_darwin_amd64" ;;
-      esac
-    ;;
-  "Linux")
-    yq_archive="yq_linux_amd64"
-    ;;
+archi=$(uname -sm)
+case "$archi" in
+  Darwin\ arm64)
+    yq_archive="yq_darwin_arm64" ;;
+  Darwin\ x86_64)
+    yq_archive="yq_darwin_amd64" ;;
+  Linux\ armv[5-9]* | Linux\ aarch64*)
+    yq_archive="yq_linux_arm64" ;;
+  Linux\ *64)
+    yq_archive="yq_linux_amd64" ;;
   *)
-    code_red "[ERROR] Unsupported OS. Exiting"
-    exit 1
-    ;;
+    code_red "[ERROR] Unsupported OS. Exiting" && exit 1 ;;
 esac
 
 # Variables
