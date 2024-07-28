@@ -5,9 +5,9 @@
 # https://github.com/mikefarah/yq
 
 # Colored output
-code_grn () { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
-code_red () { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
-code_yel () { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
+code_grn() { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
+code_red() { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
+code_yel() { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
 
 # OS Check
 archi=$(uname -sm)
@@ -40,7 +40,7 @@ yq_url="https://github.com/mikefarah/yq/releases/download/${yq_version}/"
 yq_man="yq.1"
 
 # Delete temporary install files
-clean_up () {
+clean_up() {
   case "${1}" in
     [dD]|[dD]ebug)
       printf '%s\n' "[INFO] Exiting without deleting files from ${tmp_dir}" ;;
