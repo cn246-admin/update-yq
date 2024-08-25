@@ -5,9 +5,9 @@
 # https://github.com/mikefarah/yq
 
 # Colored output
-code_grn() { tput setaf 2; printf '%s\n' "${1}"; tput sgr0; }
-code_red() { tput setaf 1; printf '%s\n' "${1}"; tput sgr0; }
-code_yel() { tput setaf 3; printf '%s\n' "${1}"; tput sgr0; }
+code_err() { tput setaf 1; printf '%s\n' "$*" >&2; tput sgr0; }
+code_grn() { tput setaf 2; printf '%s\n' "$*"; tput sgr0; }
+code_yel() { tput setaf 3; printf '%s\n' "$*"; tput sgr0; }
 
 # Delete temporary install files
 clean_up() {
@@ -27,7 +27,7 @@ case "$archi" in
   Linux\ *64)
     yq_archive="yq_linux_amd64" ;;
   *)
-    code_red "[ERROR] Unsupported OS. Exiting" && exit 1 ;;
+    code_err "[ERROR] Unsupported OS. Exiting" && exit 1 ;;
 esac
 
 # Variables
@@ -49,8 +49,8 @@ yq_man="yq.1"
 case :$PATH: in
   *:"${bin_dir}":*)  ;;  # do nothing
   *)
-    code_red "[ERROR] ${bin_dir} was not found in \$PATH!"
-    code_red "Add ${bin_dir} to PATH or select another directory to install to"
+    code_err "[ERROR] ${bin_dir} was not found in \$PATH!"
+    code_err "Add ${bin_dir} to PATH or select another directory to install to"
     exit 1 ;;
 esac
 
@@ -87,7 +87,7 @@ awk -v ref="${yq_archive}.tar.gz" -v lin="$realLineNumber" \
 
 printf '%s\n' "[INFO] Verifying ${yq_archive}.tar.gz"
 if ! shasum -qc "${tmp_dir}/SHA512sums"; then
-  code_red "[ERROR] Problem with checksum!"
+  code_err "[ERROR] Problem with checksum!"
   exit 1
 fi
 
